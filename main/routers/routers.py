@@ -64,16 +64,16 @@ COUNTRY_SETTINGS: dict[str, dict[str, str]] = {
         "sni": "google.com",
         "sid": _env_any("SID_NL", "sid_nl", default=""),
     },
-    "fi": {
-        "urlcreate": _env_any("URLCREATE_FI", "urlcreate_fi", default=""),
-        "urlupdate": _env_any("URLUPDATE_FI", "urlupdate_fi", default=""),
-        "urldelete": _env_any("URLDELETE_FI", "urldelete_fi", default=""),
-        # Параметры для генерации VLESS
-        "host": _env_any("HOST_FI", "host_fi", default=""),
-        "pbk": _env_any("PBK_FI", "pbk_fi", default=""),
-        "sni": "google.com",
-        "sid": _env_any("SID_FI", "sid_fi", default=""),
-    },
+    # "fi": {
+    #     "urlcreate": _env_any("URLCREATE_FI", "urlcreate_fi", default=""),
+    #     "urlupdate": _env_any("URLUPDATE_FI", "urlupdate_fi", default=""),
+    #     "urldelete": _env_any("URLDELETE_FI", "urldelete_fi", default=""),
+    #     # Параметры для генерации VLESS
+    #     "host": _env_any("HOST_FI", "host_fi", default=""),
+    #     "pbk": _env_any("PBK_FI", "pbk_fi", default=""),
+    #     "sni": "google.com",
+    #     "sid": _env_any("SID_FI", "sid_fi", default=""),
+    # },
 }
 
 BASE_URL: str = os.getenv("BASE_URL", "http://146.103.102.21:8080")
