@@ -477,12 +477,18 @@ async def get_subscription(tg_id: int):
     if not active_configs:
         raise HTTPException(status_code=404, detail="У вас нет активных конфигураций")
 
-    subscription_content = "\n".join(active_configs)
+    # Используем CRLF и завершаем переводом строки – совместимость с iOS-клиентами
+    subscription_content = "\r\n".join(active_configs) + "\r\n"
     logger.info("Returning %s active configs for tg_id: %s", len(active_configs), tg_id)
 
     return PlainTextResponse(
         content=subscription_content,
-        headers={"Content-Type": "text/plain; charset=utf-8"},
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+            "Content-Disposition": "inline; filename=subscription.txt",
+        },
     )
 
 @router.get("/add-config", response_class=HTMLResponse)

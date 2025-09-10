@@ -120,7 +120,6 @@
     }else if(tgIdParam){
       subscriptionURL = `http://146.103.102.21:8080/subscription/${encodeURIComponent(tgIdParam)}`;
     }
-    const v2raytunLink = subscriptionURL ? `v2raytun://import/${encodeURIComponent(subscriptionURL)}` : null;
 
     if(subscriptionURL){
       // Показываем только URL подписки
@@ -144,7 +143,7 @@
       if(!isMobile){ showToast('Откройте со смартфона'); return; }
       const link = document.createElement('a');
       if(subscriptionURL){
-        link.href = v2raytunLink;
+        link.href = `v2raytun://import/${encodeURIComponent(subscriptionURL)}`;
       }else if(configB64){
         link.href = `v2raytun://import/${configB64}`;
       }else{
@@ -169,7 +168,7 @@
     }
 
     copyBtn.addEventListener('click', async ()=>{
-      const textToCopy = v2raytunLink || decoded;
+      const textToCopy = subscriptionURL || decoded;
       if(!textToCopy){ showToast('Данные не найдены'); return; }
       const ok = await copyToClipboard(textToCopy);
       showToast(ok ? '✅ Скопировано' : '❌ Не удалось скопировать');
