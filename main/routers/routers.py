@@ -76,12 +76,11 @@ COUNTRY_SETTINGS: dict[str, dict[str, str]] = {
     },
 }
 
+BASE_URL: str = os.getenv("BASE_URL", "http://146.103.102.21:8080")
 
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-BASE_URL: str = os.getenv("BASE_URL", "https://swaga.space")
-
 # ---------------------------------------------------------------------------
 # Dependencies
 # ---------------------------------------------------------------------------
