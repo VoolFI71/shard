@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SHARD VPN — Добавить конфиг</title>
+    <style>
+    :root{
+      --bg:#0b1020;--bg2:#101634;--glass:rgba(255,255,255,.06);--stroke:rgba(255,255,255,.14);
+      --text:#e8ecf8;--muted:#a9b3c9;--primary:#6d8bff;--primary2:#9a6dff;--ok:#22c55e;--warn:#f59e0b
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter, -apple-system, Segoe UI, Roboto, Arial; color:var(--text);
+      background:
+        radial-gradient(900px 500px at 15% -10%, #6d8bff22, transparent 60%),
+        radial-gradient(1000px 600px at 85% 0%, #9a6dff1f, transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      display:flex;align-items:center;justify-content:center;padding:24px
+    }
+    .blur{position:absolute;filter:blur(80px);opacity:.6;z-index:-1}
+    .b1{top:-40px;left:6%;width:280px;height:280px;background:#6d8bff44;border-radius:50%}
+    .b2{bottom:-40px;right:10%;width:320px;height:320px;background:#9a6dff33;border-radius:50%}
+
+    .card{width:100%;max-width:900px;border:1px solid var(--stroke);background:var(--glass);
+      border-radius:18px;backdrop-filter:blur(10px) saturate(135%);padding:22px 22px 18px}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--primary),var(--primary2));box-shadow:0 10px 40px #6d8bff55;font-weight:800}
+    .brand h1{margin:0;font-size:18px;letter-spacing:.6px}
+    .subtitle{margin:4px 0 12px;color:var(--muted);font-size:14px}
+
+    .info{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 16px}
+    .chip{border:1px solid var(--stroke);border-radius:10px;padding:8px 10px;background:rgba(255,255,255,.04);font-size:12px}
+    .ok{color:var(--ok)}
+
+    .config{
+      background:rgba(255,255,255,.05);border:1px dashed var(--stroke);border-radius:12px;padding:12px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12.5px;line-height:1.6;max-height:220px;min-height:120px;overflow:auto
+    }
+
+    .actions{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--stroke);
+      background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;padding:14px;border-radius:12px;
+      font-weight:700;cursor:pointer;text-decoration:none;transition:.2s}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 12px 32px #6d8bff55}
+    .ghost{background:transparent;color:var(--text)}
+    .ghost:hover{border-color:#ffffff55}
+
+    .help{color:var(--muted);font-size:13px;margin-top:6px}
+
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+      background:#0d1226;color:#e6eaff;border:1px solid var(--stroke);padding:10px 14px;border-radius:10px;opacity:0;
+      transition:.3s;pointer-events:none}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+    @media (min-width:860px){
+      .brand h1{font-size:20px}
+      .subtitle{font-size:15px}
+      .actions{grid-template-columns:1fr 1fr}
+      .config{max-height:320px;font-size:13.5px}
+    }
+    @media (max-width:560px){.card{padding:18px}.brand h1{font-size:16px}}
+    </style>
+</head>
+<body>
+  <div class="b1 blur"></div><div class="b2 blur"></div>
+  <main class="card">
+    <div class="brand">
+      <div class="logo">⚡</div>
+      <h1>SHARDVPN — Импорт конфига</h1>
+        </div>
+    <div class="subtitle">Добавьте конфигурацию в V2rayTun в один клик</div>
+
+    <div class="info">
+      <div class="chip">⏳ Срок действия: <span id="expiry-time">—</span></div>
+      <div class="chip ok" id="platform-chip">📱 Готово для мобильного</div>
+        </div>
+
+    <div class="config" id="config-text">Загрузка конфига…</div>
+
+    <div class="actions">
+      <a class="btn" id="openBtn">📲 Открыть в V2rayTun</a>
+      <button class="btn ghost" id="copyBtn">📋 Копировать конфиг</button>
+        </div>
+    <div class="help">
+      Если приложение не открылось автоматически — скопируйте конфиг и добавьте его в V2rayTun вручную.
+    </div>
+  </main>
+
+  <div class="toast" id="toast">Скопировано</div>
+
+    <script>
+    const qs = new URLSearchParams(location.search);
+    const configB64 = qs.get('config');
+    const expiry = Number(qs.get('expiry') || 0);
+    const subscriptionParam = qs.get('subscription');
+    const tgIdParam = qs.get('tg_id');
+
+    const configBox = document.getElementById('config-text');
+    const expiryEl = document.getElementById('expiry-time');
+    const openBtn = document.getElementById('openBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const toast = document.getElementById('toast');
+
+    function showToast(text){
+      toast.textContent = text; toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1700);
+    }
+
+    let decoded = '';
+    try{
+      decoded = configB64 ? atob(configB64) : '';
+    }catch{ decoded = ''; }
+
+    let subscriptionURL = null;
+    if(subscriptionParam){
+      subscriptionURL = subscriptionParam;
+    }else if(tgIdParam){
+      subscriptionURL = `http://146.103.102.21:8080/subscription/${encodeURIComponent(tgIdParam)}`;
+    }
+
+    if(subscriptionURL){
+      // Загружаем текст подписки и логируем каждый конфиг построчно
+      configBox.textContent = 'Загрузка подписки…';
+      fetch(subscriptionURL, { cache: 'no-store' })
+        .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+        .then(text => {
+          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+          lines.forEach((cfg, idx) => console.log(cfg));
+          configBox.textContent = text || 'Подписка пуста';
+        })
+        .catch(err => {
+          console.warn('Не удалось загрузить подписку:', err);
+          configBox.textContent = subscriptionURL;
+        });
+    }else if(decoded){
+      configBox.textContent = decoded;
+    }else{
+      configBox.textContent = 'Конфиг не найден';
+    }
+
+    if(expiry){
+      const hours = Math.max(0, Math.round(expiry/3600));
+      const days = Math.floor(hours/24);
+      expiryEl.textContent = days>0 ? `${days} дн.` : `${hours} ч.`;
+    }
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if(!isMobile){ document.getElementById('platform-chip').textContent = '🖥️ Откройте со смартфона'; }
+
+    openBtn.addEventListener('click', () => {
+      if(!isMobile){ showToast('Откройте со смартфона'); return; }
+      const link = document.createElement('a');
+      if(subscriptionURL){
+        link.href = `v2raytun://import/${encodeURIComponent(subscriptionURL)}`;
+      }else if(configB64){
+        link.href = `v2raytun://import/${configB64}`;
+      }else{
+        showToast('Данные не найдены'); return;
+      }
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(()=>{ if(document.hasFocus()) showToast('Если приложение не открылось — скопируйте ссылку'); }, 1200);
+    });
+
+    async function copyToClipboard(text){
+      try{
+        if(navigator.clipboard && window.isSecureContext){
+          await navigator.clipboard.writeText(text); return true;
+        }
+      }catch{}
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        const ok = document.execCommand('copy'); ta.remove(); return ok;
+      }catch{ return false; }
+    }
+
+    copyBtn.addEventListener('click', async ()=>{
+      const textToCopy = subscriptionURL || decoded;
+      if(!textToCopy){ showToast('Данные не найдены'); return; }
+      const ok = await copyToClipboard(textToCopy);
+      showToast(ok ? '✅ Скопировано' : '❌ Не удалось скопировать');
+    });
+    </script>
+</body>
+</html>
