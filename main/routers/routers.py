@@ -470,7 +470,7 @@ async def get_subscription(tg_id: int):
                 f"vless://{user_code}@{settings['host']}:443?"
                 f"security=reality&encryption=none&pbk={settings['pbk']}&"
                 f"headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&"
-                f"sni={settings['sni']}&sid={settings['sid']}#glsvpn"
+                f"sni={settings['sni']}&sid={settings['sid']}#shardvpn"
             )
             active_configs.append(vless_config)
 
