@@ -122,19 +122,8 @@
     }
 
     if(subscriptionURL){
-      // Загружаем текст подписки и логируем каждый конфиг построчно
-      configBox.textContent = 'Загрузка подписки…';
-      fetch(subscriptionURL, { cache: 'no-store' })
-        .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
-        .then(text => {
-          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-          lines.forEach((cfg, idx) => console.log(cfg));
-          configBox.textContent = text || 'Подписка пуста';
-        })
-        .catch(err => {
-          console.warn('Не удалось загрузить подписку:', err);
-          configBox.textContent = subscriptionURL;
-        });
+      // Показываем только URL подписки
+      configBox.textContent = subscriptionURL;
     }else if(decoded){
       configBox.textContent = decoded;
     }else{
