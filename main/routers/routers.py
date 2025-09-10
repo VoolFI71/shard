@@ -53,13 +53,15 @@ def _env_any(*keys: str, default: str = "") -> str:
             return value
     return default
 
+DEFAULT_HOST: str = os.getenv("HOST_DEFAULT", "146.103.102.21")
+
 COUNTRY_SETTINGS: dict[str, dict[str, str]] = {
     "nl": {
         "urlcreate": _env_any("URLCREATE_NL", "urlcreate_nl", default=""),
         "urlupdate": _env_any("URLUPDATE_NL", "urlupdate_nl", default=""),
         "urldelete": _env_any("URLDELETE_NL", "urldelete_nl", default=""),
         # Параметры для генерации VLESS
-        "host": _env_any("HOST_NL", "host_nl", default=""),
+        "host": _env_any("HOST_NL", "host_nl", default=DEFAULT_HOST),
         "pbk": _env_any("PBK_NL", "pbk_nl", default=""),
         "sni": "google.com",
         "sid": _env_any("SID_NL", "sid_nl", default=""),
