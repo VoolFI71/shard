@@ -63,7 +63,7 @@ COUNTRY_SETTINGS: dict[str, dict[str, str]] = {
         "urlupdate": _env_any("URLUPDATE_NL", "urlupdate_nl", default=""),
         "urldelete": _env_any("URLDELETE_NL", "urldelete_nl", default=""),
         # Параметры для генерации VLESS
-        "host": _env_any("HOST_NL", "host_nl", default=""),
+        "host": _env_any("HOST_NL", "host_nl", default="146.103.102.21"),
         "pbk": _env_any("PBK_NL", "pbk_nl", default=""),
         "sni": "google.com",
         "sid": _env_any("SID_NL", "sid_nl", default=""),
@@ -84,8 +84,7 @@ COUNTRY_SETTINGS: dict[str, dict[str, str]] = {
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-BASE_URL: str = os.getenv("BASE_URL", "https://146.103.102.21")
-DEFAULT_HOST: str = os.getenv("HOST_DEFAULT", "146.103.102.21")
+
 # Subscription response metadata (v2RayTun headers)
 SUB_TITLE: str = _env_any("SUBSCRIPTION_TITLE", "sub_title", default="SHARD VPN")
 SUB_UPDATE_HOURS: str = _env_any("SUBSCRIPTION_UPDATE_HOURS", "sub_update_hours", default="12")
