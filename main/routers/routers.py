@@ -40,10 +40,14 @@ if AUTH_CODE is None:
 def _get_cookie(server_code: str) -> str:
     """Возвращает cookie для панели конкретного сервера.
 
-    Ищет переменную окружения вида ``COOKIE_fi`` (регистр не важен).
+    Для NL используется только переменная окружения ``COOKIE_NL``.
+    Для остальных серверов — ``COOKIE_{code}`` в нижнем регистре (например, ``COOKIE_fi``).
     Если не найдено – вернёт пустую строку.
     """
-    return os.getenv(f"COOKIE_{server_code.lower()}", "")
+    code = server_code.lower()
+    if code == "nl":
+        return os.getenv("COOKIE_NL", "")
+    return os.getenv(f"COOKIE_{code}", "")
 
 # Значения читаем из .env, чтобы не хранить в коде
 def _env_any(*keys: str, default: str = "") -> str:
