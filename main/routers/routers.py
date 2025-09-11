@@ -25,6 +25,7 @@ from fastapi.templating import Jinja2Templates
 from database import db
 from fastapi import FastAPI
 from models import models
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -313,6 +314,15 @@ async def give_config(
         client_data.id,
         client_data.server,
     )
+    # Присвоим пользователю постоянный sub_key, если ещё не присвоен
+    try:
+        await db.get_or_create_sub_key(str(client_data.id))
+    except Exception:
+        pass
+    users = await db.get_codes_by_tg_id(client_data.id)
+    if not users:
+        raise HTTPException(status_code=404, detail="У вас нет активных конфигураций")
+
     return reserved_uid
 
 
@@ -468,7 +478,10 @@ async def check_available_configs(
 async def read_user(tg_id: int, _: None = Depends(verify_api_key)):
     # Сначала сбрасываем истёкшие конфиги
     #await db.reset_expired_configs()
-    
+    try:
+        await db.get_or_create_sub_key(str(tg_id))
+    except Exception:
+        pass 
     users = await db.get_codes_by_tg_id(tg_id)
     if not users:
         raise HTTPException(status_code=404, detail="У вас нет активных конфигураций")
@@ -490,9 +503,6 @@ async def get_subscription(tg_id: int):
     """
 
     logger.info("Subscription request for tg_id: %s", tg_id)
-
-    # Сначала сбрасываем истёкшие конфиги
-    #await db.reset_expired_configs()
 
     users = await db.get_codes_by_tg_id(tg_id)
     if not users:
@@ -561,12 +571,12 @@ async def get_subscription(tg_id: int):
         headers=response_headers,
     )
 
-@router.get("/subscription/{tg_id}", response_class=HTMLResponse)
+@router.get("/subscription/{sub_key}", response_class=HTMLResponse)
 async def add_config_page(
     request: Request,
     config: str | None = None,
     expiry: int | None = None,
-    tg_id: int | None = None,
+    sub_key: str | None = None,
     subscription: str | None = None,
 ):
     # Контент-нега: если это не браузер — отдаём plain text (для импорта в V2rayTun)
@@ -574,10 +584,12 @@ async def add_config_page(
         # 1) Если передан subscription=..., отдадим его как есть
         if subscription:
             return PlainTextResponse(content=subscription)
-        # 2) Если передан tg_id, возвращаем содержимое подписки (как /subscription/{tg_id})
-        #    чтобы клиент получил подписку с корректным названием
-        if tg_id is not None:
-            sub_resp = await get_subscription(tg_id)  # reuse существующей логики
+        # 2) Если передан sub_key, разворачиваем его в tg_id и возвращаем подписку
+        if sub_key is not None:
+            tg_id_str = await db.get_tg_id_by_key(sub_key)
+            if tg_id_str is None:
+                raise HTTPException(status_code=404, detail="subscription key not found")
+            sub_resp = await get_subscription(int(tg_id_str))  # reuse существующей логики
             return PlainTextResponse(content=sub_resp.body.decode("utf-8"), headers=dict(sub_resp.headers))
         # 3) Если пришёл config (vless/vmess/trojan), отдадим его как текст
         if config:
@@ -596,7 +608,7 @@ async def add_config_page(
     # Иначе рендерим HTML-страницу для пользователя
     return templates.TemplateResponse(
         "subscription.html",
-        {"request": request, "config": config, "expiry": expiry, "tg_id": tg_id, "subscription": subscription},
+        {"request": request, "config": config, "expiry": expiry, "sub_key": sub_key, "subscription": subscription},
     )
 
 @router.get("/redirect")

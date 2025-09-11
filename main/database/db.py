@@ -1,3 +1,4 @@
+import uuid
 import aiosqlite
 import time
 from typing import Optional
@@ -18,6 +19,13 @@ async def init_db():
                 server_country TEXT NOT NULL
             )
         ''')
+        # Ключи подписок: произвольный ключ → tg_id
+        await cursor.execute('''
+            CREATE TABLE IF NOT EXISTS subscription_keys (
+                sub_key TEXT PRIMARY KEY,
+                tg_id TEXT NOT NULL
+            )
+        ''')
         # Индексы для ускорения частых операций
         # Уникальность по коду конфига
         await cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS ux_users_user_code ON users(user_code)')
@@ -35,6 +43,53 @@ async def init_db():
         )
         await conn.commit()
 
+async def set_subscription_key(tg_id: str, sub_key: str) -> None:
+    async with aiosqlite.connect("users.db") as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                '''
+                INSERT INTO subscription_keys (sub_key, tg_id) VALUES (?, ?)
+                ON CONFLICT(sub_key) DO UPDATE SET tg_id = excluded.tg_id
+                ''',
+                (sub_key, tg_id),
+            )
+            await conn.commit()
+
+async def get_tg_id_by_key(sub_key: str) -> Optional[str]:
+    """Возвращает tg_id по ключу подписки sub_key или None."""
+    async with aiosqlite.connect("users.db") as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                'SELECT tg_id FROM subscription_keys WHERE sub_key = ?',
+                (str(sub_key),),
+            )
+            row = await cursor.fetchone()
+            return str(row[0]) if row else None
+
+async def get_sub_key_by_tg_id(tg_id: str) -> Optional[str]:
+    async with aiosqlite.connect("users.db") as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                'SELECT sub_key FROM subscription_keys WHERE tg_id = ?',
+                (str(tg_id),),
+            )
+            row = await cursor.fetchone()
+            return str(row[0]) if row else None
+
+async def get_or_create_sub_key(tg_id: str) -> str:
+    existing = await get_sub_key_by_tg_id(tg_id)
+    if existing:
+        return existing
+    new_key = uuid.uuid4().hex
+    async with aiosqlite.connect("users.db") as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                'INSERT OR REPLACE INTO subscription_keys (sub_key, tg_id) VALUES (?, ?)',
+                (new_key, str(tg_id)),
+            )
+            await conn.commit()
+    return new_key
+    
 async def insert_into_db(tg_id, user_code, time_end, server_country):
     async with aiosqlite.connect("users.db") as conn:
         cursor = await conn.cursor()
@@ -126,6 +181,14 @@ async def get_time_end_by_code(user_code: str):
     async with aiosqlite.connect("users.db") as conn:
         async with conn.cursor() as cursor:
             await cursor.execute('SELECT time_end FROM users WHERE user_code = ?', (user_code,))
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
+async def get_subscription_key_by_tg_id(tg_id: str) -> Optional[str]:
+    """Возвращает существующий sub_key по tg_id, если он уже присвоен."""
+    async with aiosqlite.connect("users.db") as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('SELECT sub_key FROM subscription_keys WHERE tg_id = ? LIMIT 1', (tg_id,))
             row = await cursor.fetchone()
             return row[0] if row else None
 

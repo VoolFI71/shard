@@ -40,8 +40,8 @@ services:
     env_file:
       - ./main/.env
     environment:
-      - VIRTUAL_HOST=glebase.ru,www.glebase.ru
-      - LETSENCRYPT_HOST=glebase.ru,www.glebase.ru
+      - VIRTUAL_HOST=shardtg.ru,www.shardtg.ru
+      - LETSENCRYPT_HOST=shardtg.ru,www.shardtg.ru
       - VIRTUAL_PORT=8080
     volumes:
       - ./main:/app
