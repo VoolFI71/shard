@@ -81,6 +81,13 @@ COUNTRY_SETTINGS: dict[str, dict[str, str]] = {
 }
 
 
+# Отображение кода страны в читаемое имя + флаг
+COUNTRY_LABELS: dict[str, str] = {
+    "nl": "Netherlands 🇳🇱",
+    "fi": "Finland 🇫🇮",
+}
+
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -483,11 +490,12 @@ async def get_subscription(tg_id: int):
                 # Если сервер неизвестен – пропускаем
                 logger.warning("Unknown server %s for user_code %s", server, user_code)
                 continue
+            label = COUNTRY_LABELS.get(server, "SHARD VPN")
             vless_config = (
                 f"vless://{user_code}@{settings['host']}:443?"
                 f"security=reality&encryption=none&pbk={settings['pbk']}&"
                 f"headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&"
-                f"sni={settings['sni']}&sid={settings['sid']}#shardvpn"
+                f"sni={settings['sni']}&sid={settings['sid']}#{label}"
             )
             active_configs.append(vless_config)
             if time_end > max_expire_unix:
