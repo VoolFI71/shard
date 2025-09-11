@@ -35,10 +35,7 @@
     .chip{border:1px solid var(--stroke);border-radius:10px;padding:8px 10px;background:rgba(255,255,255,.04);font-size:12px}
     .ok{color:var(--ok)}
 
-    .config{
-      background:rgba(255,255,255,.05);border:1px dashed var(--stroke);border-radius:12px;padding:12px;
-      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12.5px;line-height:1.6;max-height:220px;min-height:120px;overflow:auto
-    }
+    
 
     .actions{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--stroke);
@@ -59,7 +56,7 @@
       .brand h1{font-size:20px}
       .subtitle{font-size:15px}
       .actions{grid-template-columns:1fr 1fr}
-      .config{max-height:320px;font-size:13.5px}
+      
     }
     @media (max-width:560px){.card{padding:18px}.brand h1{font-size:16px}}
     </style>
@@ -77,9 +74,6 @@
       <div class="chip">⏳ Срок действия: <span id="expiry-time">—</span></div>
       <div class="chip ok" id="platform-chip">📱 Готово для мобильного</div>
         </div>
-
-    <div class="config" id="config-text">Загрузка конфига…</div>
-
     <div class="actions">
       <a class="btn" id="openBtn">📲 Открыть в V2rayTun</a>
       <button class="btn ghost" id="copyBtn">📋 Копировать конфиг</button>
@@ -93,12 +87,10 @@
 
     <script>
     const qs = new URLSearchParams(location.search);
-    const configB64 = qs.get('config');
     const expiry = Number(qs.get('expiry') || 0);
     const subscriptionParam = qs.get('subscription');
     const tgIdParam = qs.get('tg_id');
 
-    const configBox = document.getElementById('config-text');
     const expiryEl = document.getElementById('expiry-time');
     const openBtn = document.getElementById('openBtn');
     const copyBtn = document.getElementById('copyBtn');
@@ -109,25 +101,11 @@
       setTimeout(()=>toast.classList.remove('show'), 1700);
     }
 
-    let decoded = '';
-    try{
-      decoded = configB64 ? atob(configB64) : '';
-    }catch{ decoded = ''; }
-
     let subscriptionURL = null;
     if(subscriptionParam){
       subscriptionURL = subscriptionParam;
     }else if(tgIdParam){
       subscriptionURL = `https://glebase.ru/subscription/${encodeURIComponent(tgIdParam)}`;
-    }
-
-    if(subscriptionURL){
-      // Показываем только URL подписки
-      configBox.textContent = subscriptionURL;
-    }else if(decoded){
-      configBox.textContent = decoded;
-    }else{
-      configBox.textContent = 'Конфиг не найден';
     }
 
     if(expiry){
@@ -142,13 +120,8 @@
     openBtn.addEventListener('click', () => {
       if(!isMobile){ showToast('Откройте со смартфона'); return; }
       const link = document.createElement('a');
-      if(subscriptionURL){
-        link.href = `v2raytun://import/${encodeURIComponent(subscriptionURL)}`;
-      }else if(configB64){
-        link.href = `v2raytun://import/${configB64}`;
-      }else{
-        showToast('Данные не найдены'); return;
-      }
+      if(!subscriptionURL){ showToast('Данные не найдены'); return; }
+      link.href = `v2raytun://import/${encodeURIComponent(subscriptionURL)}`;
       document.body.appendChild(link); link.click(); link.remove();
       setTimeout(()=>{ if(document.hasFocus()) showToast('Если приложение не открылось — скопируйте ссылку'); }, 1200);
     });
@@ -168,7 +141,7 @@
     }
 
     copyBtn.addEventListener('click', async ()=>{
-      const textToCopy = subscriptionURL || decoded;
+      const textToCopy = subscriptionURL;
       if(!textToCopy){ showToast('Данные не найдены'); return; }
       const ok = await copyToClipboard(textToCopy);
       showToast(ok ? '✅ Скопировано' : '❌ Не удалось скопировать');
