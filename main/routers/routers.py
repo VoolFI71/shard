@@ -479,7 +479,6 @@ async def read_user(tg_id: int, _: None = Depends(verify_api_key)):
     ]
     return JSONResponse(content=result)
 
-@router.get("/subscription/{tg_id}")
 async def get_subscription(tg_id: int):
     """Возвращает подписку из активных конфигов для V2rayTun.
 
@@ -562,7 +561,7 @@ async def get_subscription(tg_id: int):
         headers=response_headers,
     )
 
-@router.get("/add-config", response_class=HTMLResponse)
+@router.get("/subscription/{tg_id}", response_class=HTMLResponse)
 async def add_config_page(
     request: Request,
     config: str | None = None,
@@ -596,7 +595,7 @@ async def add_config_page(
 
     # Иначе рендерим HTML-страницу для пользователя
     return templates.TemplateResponse(
-        "add_config.html",
+        "subscription.html",
         {"request": request, "config": config, "expiry": expiry, "tg_id": tg_id, "subscription": subscription},
     )
 
