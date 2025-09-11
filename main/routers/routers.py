@@ -575,53 +575,11 @@ async def add_config_page(
         # 1) Если передан subscription=..., отдадим его как есть
         if subscription:
             return PlainTextResponse(content=subscription)
-        # 2) Если передан tg_id, вернём СОДЕРЖИМОЕ подписки (как /subscription/{tg_id}),
-        #    чтобы клиент сразу получил конфиги без промежуточного пустого состояния
+        # 2) Если передан tg_id, возвращаем содержимое подписки (как /subscription/{tg_id})
+        #    чтобы клиент получил подписку с корректным названием
         if tg_id is not None:
-            # Повторяем логику из get_subscription
-            users = await db.get_codes_by_tg_id(tg_id)
-            if not users:
-                raise HTTPException(status_code=404, detail="У вас нет активных конфигураций")
-
-            current_time = int(time.time())
-            active_configs: list[str] = []
-            max_expire_unix: int = 0
-
-            for user_code, time_end, server in users:
-                if time_end > current_time:
-                    settings = COUNTRY_SETTINGS.get(server)
-                    if not settings:
-                        continue
-                    vless_config = (
-                        f"vless://{user_code}@{settings['host']}:443?"
-                        f"security=reality&encryption=none&pbk={settings['pbk']}&"
-                        f"headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&"
-                        f"sni={settings['sni']}&sid={settings['sid']}#{COUNTRY_LABELS.get(server, 'SHARD VPN')}"
-                    )
-                    active_configs.append(vless_config)
-                    if time_end > max_expire_unix:
-                        max_expire_unix = time_end
-
-            if not active_configs:
-                raise HTTPException(status_code=404, detail="У вас нет активных конфигураций")
-
-            # Формируем текст подписки
-            body_header_lines: list[str] = []
-            if SUB_TITLE:
-                body_header_lines.append(f'profile-title: "{SUB_TITLE}"')
-            if max_expire_unix > 0:
-                body_header_lines.append(f'subscription-userinfo: "expire={max_expire_unix}"')
-            if SUB_UPDATE_HOURS:
-                body_header_lines.append(f'profile-update-interval: "{SUB_UPDATE_HOURS}"')
-            if SUB_ROUTING_B64:
-                body_header_lines.append(f'routing: "{SUB_ROUTING_B64}"')
-            if SUB_ANNOUNCE:
-                body_header_lines.append(f'announce: "{SUB_ANNOUNCE}"')
-            if SUB_ANNOUNCE_URL:
-                body_header_lines.append(f'announce-url: "{SUB_ANNOUNCE_URL}"')
-
-            subscription_content = ("\n".join(body_header_lines + [""]) if body_header_lines else "") + "\n".join(active_configs)
-            return PlainTextResponse(content=subscription_content, headers={"Content-Type": "text/plain; charset=utf-8"})
+            sub_resp = await get_subscription(tg_id)  # reuse существующей логики
+            return PlainTextResponse(content=sub_resp.body.decode("utf-8"), headers=dict(sub_resp.headers))
         # 3) Если пришёл config (vless/vmess/trojan), отдадим его как текст
         if config:
             try:
