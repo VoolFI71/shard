@@ -49,6 +49,26 @@ def _get_cookie(server_code: str) -> str:
         return os.getenv("COOKIE_NL", "")
     return os.getenv(f"COOKIE_{code}", "")
 
+def _is_browser_request(headers: dict[str, str]) -> bool:
+    """Грубая эвристика определения браузера для контент-nega.
+
+    Возвращает True для браузеров (отдаём HTML), False для клиентов/приложений (отдаём text/plain).
+    """
+    ua = headers.get("user-agent", "").lower()
+    accept = headers.get("accept", "").lower()
+    # Современные браузеры отправляют Sec-Fetch-* и/или ch-ua заголовки
+    has_sec_fetch = any(h in headers for h in ("sec-fetch-mode", "sec-fetch-site", "sec-ch-ua"))
+    if has_sec_fetch:
+        return True
+    # Явно HTML в Accept → браузер
+    if "text/html" in accept:
+        return True
+    # По User-Agent
+    browser_markers = ("mozilla", "chrome", "safari", "firefox", "edg/")
+    if any(marker in ua for marker in browser_markers):
+        return True
+    return False
+
 # Значения читаем из .env, чтобы не хранить в коде
 def _env_any(*keys: str, default: str = "") -> str:
     for key in keys:
@@ -550,6 +570,36 @@ async def add_config_page(
     tg_id: int | None = None,
     subscription: str | None = None,
 ):
+    # Контент-нега: если это не браузер — отдаём plain text (для импорта в V2rayTun)
+    if not _is_browser_request({k.lower(): v for k, v in request.headers.items()}):
+        # 1) Если передан subscription=..., отдадим его как есть
+        if subscription:
+            return PlainTextResponse(content=subscription)
+        # 2) Если передан tg_id, вернём абсолютную ссылку на подписку
+        if tg_id is not None:
+            host = request.headers.get("host", "")
+            # Строим https-ссылку на подписку (за прокси работаем по HTTPS)
+            if host:
+                sub_url = f"https://{host}/subscription/{tg_id}"
+            else:
+                # Fallback: относительный путь
+                sub_url = f"/subscription/{tg_id}"
+            return PlainTextResponse(content=sub_url)
+        # 3) Если пришёл config (vless/vmess/trojan), отдадим его как текст
+        if config:
+            try:
+                # Если пришёл base64 — проверим и декодируем
+                decoded = base64.b64decode(config, validate=True).decode()
+                if decoded.startswith(("vless://", "vmess://", "trojan://")):
+                    return PlainTextResponse(content=decoded)
+            except Exception:
+                pass
+            # Иначе считаем, что это уже сырой конфиг
+            return PlainTextResponse(content=config)
+        # Нечего отдавать
+        return PlainTextResponse(content="", status_code=204)
+
+    # Иначе рендерим HTML-страницу для пользователя
     return templates.TemplateResponse(
         "add_config.html",
         {"request": request, "config": config, "expiry": expiry, "tg_id": tg_id, "subscription": subscription},
