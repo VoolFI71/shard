@@ -107,8 +107,8 @@
     try { decoded = configB64 ? atob(configB64) : ''; } catch { decoded = ''; }
 
     // объявляем currentUrl/displayUrl (используем декодированный конфиг)
-    const currentUrl = decoded || '';
-    const displayUrl = decoded || '';
+    const currentUrl = decoded || window.location.href;
+    const displayUrl = decoded || window.location.href;
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (!isMobile) {
