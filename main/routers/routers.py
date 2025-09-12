@@ -571,6 +571,15 @@ async def get_subscription(tg_id: int):
         headers=response_headers,
     )
 
+@router.get("/sub/{user_id}")
+async def get_sub_key(user_id: str, _: None = Depends(verify_api_key)):
+    try:
+        sub_key = await db.get_or_create_sub_key(str(user_id))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Ошибка. Попробуйте позже.")
+    return JSONResponse({"sub_key": sub_key})
+
+
 @router.get("/subscription/{sub_key}", response_class=HTMLResponse)
 async def add_config_page(
     request: Request,
