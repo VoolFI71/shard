@@ -114,25 +114,6 @@
     let decoded = '';
     try { decoded = configB64 ? atob(configB64) : ''; } catch { decoded = ''; }
 
-    const currentUrl = location.href.split('#')[0];
-
-    let displayUrl = null;
-    if (subscriptionParam) {
-      displayUrl = subscriptionParam.startsWith('http') ? subscriptionParam : `https://${subscriptionParam}`;
-    } else if (tgIdParam) {
-      displayUrl = `https://shardtg.ru/subscription/${encodeURIComponent(tgIdParam)}`;
-    } else if (decoded) {
-      displayUrl = decoded;
-    } else {
-      displayUrl = currentUrl; // fallback
-    }
-
-    if (configBox) {
-      configBox.textContent = displayUrl;
-    } else {
-      console.warn('config-text not found, displayUrl:', displayUrl);
-    }
-
     // expiry — округляем вверх (ceil) до часов, показываем в днях/часах
     if (expiry && expiry > 0) {
       const hours = Math.max(0, Math.ceil(expiry / 3600));
